@@ -27,6 +27,7 @@ def parse_args():
 
 if __name__ == '__main__':
     config = parse_args()
+    NUM_EPOCHS = 50
 
     datagen = Dataset(cache_file=config.file_cache,
                       path_imgs=config.path_imgs,
@@ -53,15 +54,18 @@ if __name__ == '__main__':
     # model.fit(...)
 
     model.fit_generator(
-        generator=datagen.batch_iterator(subset='train'),
+        generator=datagen.batch_iterator(subset='train',
+                                         batch_size=config.batch_size,
+                                         num_epochs=NUM_EPOCHS),
         # steps_per_epoch=datagen.num_examples // config.batch_size,
         steps_per_epoch=datagen.num_examples['train'] // config.batch_size / 10,
         epochs=50,
         verbose=2,
         callbacks=callbs,
-        validation_data=datagen.batch_iterator(subset='test'),
+        validation_data=datagen.batch_iterator(subset='test',
+                                               batch_size=config.batch_size,
+                                               num_epochs=NUM_EPOCHS),
         validation_steps=100
-        # validation_steps=100
     )
 
     # for idx_step, data_batch in enumerate(datagen.batch_iterator()):
