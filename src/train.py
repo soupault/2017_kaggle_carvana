@@ -7,7 +7,7 @@ from keras.callbacks import (ProgbarLogger, ModelCheckpoint,
                              EarlyStopping, LearningRateScheduler,
                              TensorBoard, ReduceLROnPlateau)
 
-from h5py_shuffled_batch_gen import Dataset
+from h5py_shuffled_batch_gen import DatasetTrain
 from models.zf_unet.zf_unet_224_model import (ZF_UNET_224,
                                               dice_coef_loss, dice_coef)
 
@@ -20,6 +20,8 @@ def parse_args():
     parser.add_argument('--path_masks', required=True)
     parser.add_argument('--shape', required=False, type=int, default=224)
     parser.add_argument('--batch_size', required=False, type=int, default=64)
+    parser.add_argument('--num_epochs', required=False, type=int, default=100)
+    parser.add_argument('--ckpt_epochs', required=False, type=int, default=10)
 
     args = parser.parse_args()
     return args
@@ -27,12 +29,11 @@ def parse_args():
 
 if __name__ == '__main__':
     config = parse_args()
-    NUM_EPOCHS = 50
 
-    datagen = Dataset(cache_file=config.file_cache,
-                      path_imgs=config.path_imgs,
-                      path_masks=config.path_masks,
-                      batch_size=config.batch_size)
+    datagen = DatasetTrain(cache_file=config.file_cache,
+                           path_imgs=config.path_imgs,
+                           path_masks=config.path_masks,
+                           batch_size=config.batch_size)
 
     model = ZF_UNET_224()
     # model.load_weights("zf_unet_224.h5")
@@ -43,29 +44,30 @@ if __name__ == '__main__':
         # ProgbarLogger(count_mode='steps'),
         ModelCheckpoint(
             filepath='./weights/temp.{epoch:02d}-{val_loss:.2f}.hdf5',
-            monitor='val_loss', period=5),
+            monitor='val_loss', period=config.ckpt_epochs),
         # EarlyStopping(),
         # LearningRateScheduler(),
         TensorBoard(log_dir='./logs',
-                    write_images=True),
+                    write_images=False),
         # ReduceLROnPlateau()
     ]
-
-    # model.fit(...)
 
     model.fit_generator(
         generator=datagen.batch_iterator(subset='train',
                                          batch_size=config.batch_size,
-                                         num_epochs=NUM_EPOCHS),
+                                         num_epochs=config.num_epochs),
         # steps_per_epoch=datagen.num_examples // config.batch_size,
-        steps_per_epoch=datagen.num_examples['train'] // config.batch_size / 10,
-        epochs=50,
+        steps_per_epoch=(datagen.num_examples['train'] //
+                         config.batch_size // 10),
+        epochs=config.num_epochs,
         verbose=2,
         callbacks=callbs,
-        validation_data=datagen.batch_iterator(subset='test',
+        validation_data=datagen.batch_iterator(subset='val',
                                                batch_size=config.batch_size,
-                                               num_epochs=NUM_EPOCHS),
-        validation_steps=100
+                                               num_epochs=config.num_epochs),
+        validation_steps=(datagen.num_examples['val'] //
+                          config.batch_size // 10)
+        # validation_steps=30
     )
 
     # for idx_step, data_batch in enumerate(datagen.batch_iterator()):
