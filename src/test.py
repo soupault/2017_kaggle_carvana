@@ -9,7 +9,7 @@ import numpy as np
 from skimage import io
 
 # from h5py_shuffled_batch_gen import Dataset
-from models.zf_unet.zf_unet_224_model import ZF_UNET_224
+from models.zf_unet_224 import ZF_UNET_224
 from utils import batch_upscale_encode
 
 

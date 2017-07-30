@@ -8,8 +8,8 @@ from keras.callbacks import (ProgbarLogger, ModelCheckpoint,
                              TensorBoard, ReduceLROnPlateau)
 
 from h5py_shuffled_batch_gen import DatasetTrain
-from models.zf_unet.zf_unet_224_model import (ZF_UNET_224,
-                                              dice_coef_loss, dice_coef)
+from models.zf_unet_224 import (ZF_UNET_224,
+                                dice_coef_loss, dice_coef)
 
 
 def parse_args():
