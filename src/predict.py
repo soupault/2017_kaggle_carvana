@@ -77,7 +77,9 @@ if __name__ == '__main__':
 
     def job_binarize_clean_upsize(image):
         image_bin = image >= 1
-        image_open = ndi.morphology.binary_opening(image_bin, struct)
+        # image_open = ndi.morphology.binary_opening(image_bin, struct)
+        image_open = ndi.filters.median_filter(image_bin, size=7,
+                                               mode='constant', cval=False)
         image_up = cv2.resize(image_open.astype(np.uint8), shape_out[::-1])
         return image_up
 

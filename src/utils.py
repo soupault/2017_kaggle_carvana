@@ -57,6 +57,7 @@ def batch_downscale(path_in, path_out, shape, binarize):
 def _mask_to_rle_string(mask):
     """Convert boolean/`binary uint` mask to RLE string."""
     # Mask to RLE
+    # pixels = mask.flatten()  # Incorrect
     pixels = mask.T.flatten()
     runs = np.where(pixels[1:] != pixels[:-1])[0] + 2
     runs[1::2] = runs[1::2] - runs[:-1:2]
