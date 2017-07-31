@@ -55,12 +55,12 @@ if __name__ == '__main__':
     # XXX: debug
     # idxs_s = idxs_s[:2]
     # idxs_e = idxs_e[:2]
-    # idxs_s = idxs_s[-1:]
-    # idxs_e = idxs_e[-1:]
+    # idxs_s = idxs_s[:20]
+    # idxs_e = idxs_e[:20]
     # XXX: end
 
     results = dict()
-    shape_out = (1280, 1913)
+    shape_out = (1280, 1918)
 
     # Prepare jobs
     def job_read_mask(fname):
@@ -73,14 +73,15 @@ if __name__ == '__main__':
         return cv2.imwrite(fname, image)
 
     struct = ndi.morphology.generate_binary_structure(2, 1)
-    struct = ndi.morphology.iterate_structure(struct, 2)
+    struct = ndi.morphology.iterate_structure(struct, 4)
 
     def job_binarize_clean_upsize(image):
-        image_bin = image >= 1
-        # image_open = ndi.morphology.binary_opening(image_bin, struct)
-        image_open = ndi.filters.median_filter(image_bin, size=7,
-                                               mode='constant', cval=False)
+        image_bin = np.not_equal(image, 0)
+        image_open = ndi.morphology.binary_opening(image_bin, struct)
+        # image_open = ndi.filters.median_filter(image_bin, size=7,
+        #                                        mode='constant', cval=False)
         image_up = cv2.resize(image_open.astype(np.uint8), shape_out[::-1])
+        image_up = np.not_equal(image_up, 0)
         return image_up
 
     def job_mask_to_rle(mask):
@@ -117,6 +118,15 @@ if __name__ == '__main__':
             if True:
                 # XXX
                 batch_fnames_out = batch_fnames_in
+
+                # tmp = job_read_mask(batch_fnames_out[0])
+                # print(np.unique(tmp), np.min(tmp), np.max(tmp))
+                # tmp = job_binarize_clean_upsize(tmp)
+                # print(np.unique(tmp), np.min(tmp), np.max(tmp))
+                # tmp = job_write_mask('./debug.jpg', tmp)
+                # print('OK')
+                # quit()
+                
                 # Upscale and apply RLE
                 rles = parallel(delayed(job_file_mask_low_to_rle)(e)
                                 for e in batch_fnames_out)
