@@ -101,8 +101,8 @@ class DatasetTrain:
             for idx, fname in enumerate(fnames_imgs[subset]):
                 img = self._read_img(os.path.join(self.path_imgs, fname))
                 mask = self._read_img(os.path.join(
-                    self.path_masks,
-                    fname.replace('.jpg', '_mask.gif'))).reshape(img_r, img_c, 1)
+                    self.path_masks, fname.replace('.jpg', '_mask.gif'))
+                ).reshape(img_r, img_c, 1)
 
                 X_temp[idx, :, :, :] = img
                 y_temp[idx, :, :, :] = mask
