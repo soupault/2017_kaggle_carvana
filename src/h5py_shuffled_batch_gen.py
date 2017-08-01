@@ -63,7 +63,8 @@ class DatasetTrain:
     def _build_cache(self):
         """ """
         # img_r, img_c = 1280, 1918
-        img_r, img_c = 224, 224
+        # img_r, img_c = 224, 224
+        img_r, img_c = 320, 480
 
         logger.info('Caching files from {} | {}'
                     .format(self.path_imgs, self.path_masks))
@@ -101,7 +102,7 @@ class DatasetTrain:
             for idx, fname in enumerate(fnames_imgs[subset]):
                 img = self._read_img(os.path.join(self.path_imgs, fname))
                 mask = self._read_img(os.path.join(
-                    self.path_masks, fname.replace('.jpg', '_mask.gif'))
+                    self.path_masks, fname.replace('.jpg', '_mask.png'))
                 ).reshape(img_r, img_c, 1)
 
                 X_temp[idx, :, :, :] = img

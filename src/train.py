@@ -1,3 +1,4 @@
+import os
 import argparse
 
 import numpy as np
@@ -8,8 +9,8 @@ from keras.callbacks import (ProgbarLogger, ModelCheckpoint,
                              TensorBoard, ReduceLROnPlateau)
 
 from h5py_shuffled_batch_gen import DatasetTrain
-from models.zf_unet_224 import (ZF_UNET_224,
-                                dice_coef_loss, dice_coef)
+from models.zf_unet import (ZF_UNET_224, ZF_UNET_320_480,
+                            dice_coef_loss, dice_coef)
 
 
 def parse_args():
@@ -18,7 +19,8 @@ def parse_args():
     parser.add_argument('--file_cache', required=True)
     parser.add_argument('--path_imgs', required=True)
     parser.add_argument('--path_masks', required=True)
-    parser.add_argument('--shape', required=False, type=int, default=224)
+    parser.add_argument('--shape_row', required=False, type=int, default=224)
+    parser.add_argument('--shape_col', required=False, type=int, default=224)
     parser.add_argument('--batch_size', required=False, type=int, default=64)
     parser.add_argument('--num_epochs', required=False, type=int, default=100)
     parser.add_argument('--ckpt_epochs', required=False, type=int, default=10)
@@ -35,19 +37,28 @@ if __name__ == '__main__':
                            path_masks=config.path_masks,
                            batch_size=config.batch_size)
 
-    model = ZF_UNET_224()
+    # model = ZF_UNET_224()
     # model.load_weights("zf_unet_224.h5")
+    model = ZF_UNET_320_480()
+
+    path_weights = './weights'
+    path_logs = './logs'
+    for p in (path_weights, path_logs):
+        if not os.path.exists(p):
+            os.makedirs(p)
+            print('Created folder {}'.format(p))
+
     optim = Adam()
     model.compile(optimizer=optim, loss=dice_coef_loss, metrics=[dice_coef])
 
     callbs = [
         # ProgbarLogger(count_mode='steps'),
         ModelCheckpoint(
-            filepath='./weights/temp.{epoch:02d}-{val_loss:.2f}.hdf5',
+            filepath=path_weights+'/temp.{epoch:02d}-{val_loss:.2f}.hdf5',
             monitor='val_loss', period=config.ckpt_epochs),
         # EarlyStopping(),
         # LearningRateScheduler(),
-        TensorBoard(log_dir='./logs',
+        TensorBoard(log_dir=path_logs,
                     write_images=False),
         # ReduceLROnPlateau()
     ]

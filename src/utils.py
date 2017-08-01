@@ -3,10 +3,11 @@ import glob
 from joblib import Parallel, delayed
 
 import numpy as np
+import imageio
 import cv2
 
 
-def _roundtrip_resize(fname_in, fname_out, shape_out, binarize):
+def _roundtrip_resize_image(fname_in, fname_out, shape_out, binarize):
     """Job. Read, resize, and write image. Optionally, binarize."""
     image = cv2.imread(fname_in)
 
@@ -20,12 +21,31 @@ def _roundtrip_resize(fname_in, fname_out, shape_out, binarize):
     cv2.imwrite(fname_out, image_resh)
 
 
-def batch_downscale(path_in, path_out, shape, binarize):
+def _roundtrip_resize_mask(fname_in, fname_out, shape_out, binarize):
+    """Job. Read, resize, and write image. Optionally, binarize.
+
+    Use `imageio` as `OpenCV` does not support .gif .
+    """
+    image = imageio.imread(fname_in)
+
+    # Swap shape dims as required by OpenCV
+    image_resh = cv2.resize(image, shape_out[::-1])
+
+    if binarize:
+        image_resh[image_resh > 127] = 255
+        image_resh[image_resh <= 127] = 0
+
+    imageio.imwrite(fname_out, image_resh)
+
+
+def batch_downscale(path_in, path_out, shape, binarize, kind):
     """Parallel downscaling of all images within folder."""
     # Create a list of files to process
     fnames_in = glob.glob(os.path.join(path_in, '*.*'))
-    fnames_out = [os.path.join(path_out, os.path.basename(e))
+    # Use .png as .jpg doesn't reach 100 quality (e.g. corrupts binary masks)
+    bnames_out = [os.path.basename(e).split('.')[0] + '.png'
                   for e in fnames_in]
+    fnames_out = [os.path.join(path_out, e) for e in bnames_out]
 
     if not os.path.exists(path_out):
         os.makedirs(path_out)
@@ -35,8 +55,16 @@ def batch_downscale(path_in, path_out, shape, binarize):
                  for fin, fout in zip(fnames_in, fnames_out)]
 
     # Execute jobs
-    Parallel(n_jobs=4, verbose=4)(delayed(_roundtrip_resize)(*job_args)
-                                  for job_args in jobs_args)
+    if kind == 'image':
+        Parallel(n_jobs=4, verbose=4)(
+            delayed(_roundtrip_resize_image)(*job_args)
+            for job_args in jobs_args)
+    elif kind == 'mask':
+        Parallel(n_jobs=4, verbose=4)(
+            delayed(_roundtrip_resize_mask)(*job_args)
+            for job_args in jobs_args)
+    else:
+        raise ValueError('Kind is unknown: {}'.format(kind))
 
 
 def _mask_to_rle_string(mask):

@@ -9,7 +9,7 @@ import scipy.ndimage as ndi
 import cv2
 
 # from h5py_shuffled_batch_gen import Dataset
-from models.zf_unet_224 import ZF_UNET_224
+from models.zf_unet import ZF_UNET_224, ZF_UNET_320_480
 from utils import (_resize_encode_mask,
                    _mask_to_rle_string)
 
@@ -39,7 +39,8 @@ if __name__ == '__main__':
     #                   path_masks=config.path_masks,
     #                   batch_size=config.batch_size)
 
-    model = ZF_UNET_224()
+    # model = ZF_UNET_224()
+    model = ZF_UNET_320_480()
     model.load_weights(config.weights)
 
     fnames = glob.glob(os.path.join(config.path_imgs, '*'))
@@ -100,9 +101,11 @@ if __name__ == '__main__':
             batch_fnames_in = fnames[idx_s:idx_e]
             batch_bnames = [os.path.basename(e) for e in batch_fnames_in]
 
-            if False:
+            # if False:
+            if True:
                 # Read images
-                ret = parallel(delayed(job_read_img)(e) for e in batch_fnames_in)
+                ret = parallel(delayed(job_read_img)(e)
+                               for e in batch_fnames_in)
                 batch_images = np.asarray(ret)
 
                 # Predict masks
@@ -115,7 +118,8 @@ if __name__ == '__main__':
                          for f, m in zip(batch_fnames_out,
                                          batch_masks_low))
 
-            if True:
+            # if True:
+            if False:
                 # XXX
                 batch_fnames_out = batch_fnames_in
 
@@ -141,10 +145,11 @@ if __name__ == '__main__':
 
     print('Processing finished')
 
-    # Write submission file
-    with open('temp_submission.csv', 'w') as f:
-        print('Creating submission file')
-        f.writelines(['img,rle_mask\n'])
-        lines = ['{},{}\n'.format(k, v) for k, v in sorted(results.items())]
-        f.writelines(lines)
-        print('Submission file successfully written')
+    if False:
+        # Write submission file
+        with open('temp_submission.csv', 'w') as f:
+            print('Creating submission file')
+            f.writelines(['img,rle_mask\n'])
+            lines = ['{},{}\n'.format(k, v) for k, v in sorted(results.items())]
+            f.writelines(lines)
+            print('Submission file successfully written')
