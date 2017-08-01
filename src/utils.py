@@ -1,40 +1,25 @@
 import os
 import glob
-import argparse
 from joblib import Parallel, delayed
 
 import numpy as np
-from skimage import transform
 import cv2
-
-
-def parse_args():
-    """
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--path_in', required=True)
-    parser.add_argument('--path_out', required=True)
-    parser.add_argument('--shape', required=False, type=int, default=224)
-    parser.add_argument('--binarize', action='store_true', default=False)
-
-    args = parser.parse_args()
-    return args
 
 
 def _roundtrip_resize(fname_in, fname_out, shape_out, binarize):
     """Job. Read, resize, and write image. Optionally, binarize."""
-    image = cv2.imread(fname_in)[:, :, ::-1]
+    image = cv2.imread(fname_in)
 
-    image_resh = transform.resize(image, shape_out,
-                                  preserve_range=True,
-                                  mode='reflect').astype(np.uint8)
+    # Swap shape dims as required by OpenCV
+    image_resh = cv2.resize(image, shape_out[::-1])
+
     if binarize:
         image_resh[image_resh > 127] = 255
         image_resh[image_resh <= 127] = 0
 
-    cv2.imwrite(fname_out, image_resh[:, :, ::-1])
+    cv2.imwrite(fname_out, image_resh)
 
-    
+
 def batch_downscale(path_in, path_out, shape, binarize):
     """Parallel downscaling of all images within folder."""
     # Create a list of files to process
@@ -46,7 +31,7 @@ def batch_downscale(path_in, path_out, shape, binarize):
         os.makedirs(path_out)
 
     # Schedule jobs
-    jobs_args = [(fin, fout, (shape, )*2, binarize)
+    jobs_args = [(fin, fout, shape, binarize)
                  for fin, fout in zip(fnames_in, fnames_out)]
 
     # Execute jobs
@@ -102,46 +87,3 @@ def batch_upscale_encode(batch_masks):
         delayed(_resize_encode_mask)(mask, shape) for mask in batch_masks)
 
     return ret
-
-
-# WIP
-# def check_rle():
-
-#     if 0: #check one mask file
-#         #opencv does not read gif
-#         mask_file = '/root/share/[data]/kaggle-carvana-cars-2017/annotations/train_masks/0cdf5b5d0ce1_01_mask.gif'
-#         mask = PIL.Image.open(mask_file)  #cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
-#         mask = np.array(mask)
-
-#         #im_show('mask', mask*255, resize=0.25)
-#         #cv2.waitKey(0)
-#         mask1 = cv2.resize(mask,(0,0), fx=0.25, fy=0.25)
-#         im_show('mask1', mask1*255, resize=1)
-#         rle = run_length_encode(mask1)
-
-#         cv2.waitKey(0)
-
-#     if 1: #check with train_masks.csv given
-
-#         csv_file  = CARVANA_DIR + '/masks_train.csv'  # read all annotations
-#         mask_dir  = CARVANA_DIR + '/annotations/train'  # read all annotations
-#         df  = pd.read_csv(csv_file)
-#         for n in range(10):
-#             shortname = df.values[n][0].replace('.jpg','')
-#             rle_hat   = df.values[n][1]
-
-#             mask_file = mask_dir + '/' + shortname + '_mask.gif'
-#             mask = PIL.Image.open(mask_file)
-#             mask = np.array(mask)
-#             rle  = run_length_encode(mask)
-#             #im_show('mask', mask*255, resize=0.25)
-#             #cv2.waitKey(0)
-#             match = rle == rle_hat
-#             print('%d match=%s'%(n,match))
-
-
-if __name__ == '__main__':
-    pass
-    # args = parse_args()
-
-    # batch_downscale(args.path_in, args.path_out, args.shape, args.binarize)

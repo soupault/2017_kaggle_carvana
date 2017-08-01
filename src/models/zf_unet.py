@@ -80,8 +80,51 @@ def double_conv_layer(x, filters, kernel_size, dropout, batch_norm):
 
 
 def ZF_UNET_224(dropout_val=0.05, batch_norm=True):
-    inputs = Input((224, 224, INPUT_CHANNELS))
+    inputs = Input((224, 224, INPUT_CHANNELS))  # TensorFlow backend, dim_order
     # inputs = Input((INPUT_CHANNELS, 224, 224))
+    conv1 = double_conv_layer(inputs, 32, 3, dropout_val, batch_norm)
+    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+
+    conv2 = double_conv_layer(pool1, 64, 3, dropout_val, batch_norm)
+    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+
+    conv3 = double_conv_layer(pool2, 128, 3, dropout_val, batch_norm)
+    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
+
+    conv4 = double_conv_layer(pool3, 256, 3, dropout_val, batch_norm)
+    pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
+
+    conv5 = double_conv_layer(pool4, 512, 3, dropout_val, batch_norm)
+    pool5 = MaxPooling2D(pool_size=(2, 2))(conv5)
+
+    conv6 = double_conv_layer(pool5, 1024, 3, dropout_val, batch_norm)
+
+    up6 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv6), conv5])
+    conv7 = double_conv_layer(up6, 512, 3, dropout_val, batch_norm)
+
+    up7 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv7), conv4])
+    conv8 = double_conv_layer(up7, 256, 3, dropout_val, batch_norm)
+
+    up8 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv8), conv3])
+    conv9 = double_conv_layer(up8, 128, 3, dropout_val, batch_norm)
+
+    up9 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv9), conv2])
+    conv10 = double_conv_layer(up9, 64, 3, dropout_val, batch_norm)
+
+    up10 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv10), conv1])
+    conv11 = double_conv_layer(up10, 32, 3, 0, batch_norm)
+
+    conv12 = Conv2D(OUTPUT_MASK_CHANNELS, kernel_size=1, strides=1)(conv11)
+    conv12 = BatchNormalization(axis=-1)(conv12)
+    conv12 = Activation('sigmoid')(conv12)
+
+    model = Model(inputs=[inputs], outputs=[conv12])
+    return model
+
+
+def ZF_UNET_320_480(dropout_val=0.05, batch_norm=True):
+    inputs = Input((320, 480, INPUT_CHANNELS))  # TensorFlow backend, dim_order
+
     conv1 = double_conv_layer(inputs, 32, 3, dropout_val, batch_norm)
     pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
 
