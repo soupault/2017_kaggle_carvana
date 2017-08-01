@@ -57,8 +57,10 @@ def batch_downscale(path_in, path_out, shape, binarize):
 def _mask_to_rle_string(mask):
     """Convert boolean/`binary uint` mask to RLE string."""
     # Mask to RLE
-    # pixels = mask.flatten()
-    pixels = mask.T.flatten()
+    pixels = mask.flatten()
+    pixels[0] = 0
+    pixels[-1] = 0
+    # pixels = mask.swapaxes(0, 1).flatten()
     runs = np.where(pixels[1:] != pixels[:-1])[0] + 2
     runs[1::2] = runs[1::2] - runs[:-1:2]
 
@@ -69,20 +71,18 @@ def _mask_to_rle_string(mask):
 def _rle_string_to_mask(rle_string, shape=None):
     """Convert RLE string to uint8 binary mask."""
     if shape is None:
-        shape = (1280, 1913)
+        shape = (1280, 1918)
 
-    mask = np.zeros(shape[0] * shape[1], dtype=np.uint8)
-    # mask = np.zeros(shape[0] * shape[1], dtype=np.bool)
+    mask = np.zeros(shape[0] * shape[1], dtype=np.bool)
 
     rle = rle_string.split(' ')
 
     for i in range(0, len(rle) - 1, 2):
         idx_s, n = int(rle[i]) - 1, int(rle[i+1])
         idx_e = idx_s + n
-        mask[idx_s:idx_e] = 255
-        # mask[idx_s:idx_e] = True
+        mask[idx_s:idx_e] = True
 
-    return mask.reshape(shape[::-1])
+    return mask.reshape(shape)
 
 
 def _resize_encode_mask(mask, shape_out):
@@ -95,13 +95,49 @@ def _resize_encode_mask(mask, shape_out):
 
 def batch_upscale_encode(batch_masks):
     """Parallel upscale, binarize, and encode masks into RLE strings."""
-    shape = (1280, 1913)
+    shape = (1280, 1918)
 
     # Execute jobs
     ret = Parallel(n_jobs=4, verbose=4)(
         delayed(_resize_encode_mask)(mask, shape) for mask in batch_masks)
 
     return ret
+
+
+# WIP
+# def check_rle():
+
+#     if 0: #check one mask file
+#         #opencv does not read gif
+#         mask_file = '/root/share/[data]/kaggle-carvana-cars-2017/annotations/train_masks/0cdf5b5d0ce1_01_mask.gif'
+#         mask = PIL.Image.open(mask_file)  #cv2.imread(mask_file, cv2.IMREAD_GRAYSCALE)
+#         mask = np.array(mask)
+
+#         #im_show('mask', mask*255, resize=0.25)
+#         #cv2.waitKey(0)
+#         mask1 = cv2.resize(mask,(0,0), fx=0.25, fy=0.25)
+#         im_show('mask1', mask1*255, resize=1)
+#         rle = run_length_encode(mask1)
+
+#         cv2.waitKey(0)
+
+#     if 1: #check with train_masks.csv given
+
+#         csv_file  = CARVANA_DIR + '/masks_train.csv'  # read all annotations
+#         mask_dir  = CARVANA_DIR + '/annotations/train'  # read all annotations
+#         df  = pd.read_csv(csv_file)
+#         for n in range(10):
+#             shortname = df.values[n][0].replace('.jpg','')
+#             rle_hat   = df.values[n][1]
+
+#             mask_file = mask_dir + '/' + shortname + '_mask.gif'
+#             mask = PIL.Image.open(mask_file)
+#             mask = np.array(mask)
+#             rle  = run_length_encode(mask)
+#             #im_show('mask', mask*255, resize=0.25)
+#             #cv2.waitKey(0)
+#             match = rle == rle_hat
+#             print('%d match=%s'%(n,match))
 
 
 if __name__ == '__main__':

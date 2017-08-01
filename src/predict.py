@@ -73,14 +73,14 @@ if __name__ == '__main__':
         return cv2.imwrite(fname, image)
 
     struct = ndi.morphology.generate_binary_structure(2, 1)
-    struct = ndi.morphology.iterate_structure(struct, 4)
+    # struct2 = ndi.morphology.iterate_structure(struct, 2)
+    struct3 = ndi.morphology.iterate_structure(struct, 3)
 
     def job_binarize_clean_upsize(image):
         image_bin = np.not_equal(image, 0)
-        image_open = ndi.morphology.binary_opening(image_bin, struct)
-        # image_open = ndi.filters.median_filter(image_bin, size=7,
-        #                                        mode='constant', cval=False)
-        image_up = cv2.resize(image_open.astype(np.uint8), shape_out[::-1])
+        image_filt = ndi.morphology.binary_opening(image_bin, struct3)
+        # image_filt = ndi.morphology.binary_closing(image_filt, struct3)
+        image_up = cv2.resize(image_filt.astype(np.uint8), shape_out[::-1])
         image_up = np.not_equal(image_up, 0)
         return image_up
 
