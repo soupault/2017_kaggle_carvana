@@ -141,25 +141,31 @@ def ZF_UNET_320_480(dropout_val=0.05, batch_norm=True):
     pool5 = MaxPooling2D(pool_size=(2, 2))(conv5)
 
     conv6 = double_conv_layer(pool5, 1024, 3, dropout_val, batch_norm)
+    pool6 = MaxPooling2D(pool_size=(2, 3))(conv6)
 
-    up6 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv6), conv5])
-    conv7 = double_conv_layer(up6, 512, 3, dropout_val, batch_norm)
+    conv7 = double_conv_layer(pool6, 2048, 3, dropout_val, batch_norm)
 
-    up7 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv7), conv4])
-    conv8 = double_conv_layer(up7, 256, 3, dropout_val, batch_norm)
+    up7 = Concatenate(axis=-1)([UpSampling2D(size=(2, 3))(conv7), conv6])
+    conv8 = double_conv_layer(up7, 1024, 3, dropout_val, batch_norm)
 
-    up8 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv8), conv3])
-    conv9 = double_conv_layer(up8, 128, 3, dropout_val, batch_norm)
+    up8 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv8), conv5])
+    conv9 = double_conv_layer(up8, 512, 3, dropout_val, batch_norm)
 
-    up9 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv9), conv2])
-    conv10 = double_conv_layer(up9, 64, 3, dropout_val, batch_norm)
+    up9 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv9), conv4])
+    conv10 = double_conv_layer(up9, 256, 3, dropout_val, batch_norm)
 
-    up10 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv10), conv1])
-    conv11 = double_conv_layer(up10, 32, 3, 0, batch_norm)
+    up10 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv10), conv3])
+    conv11 = double_conv_layer(up10, 128, 3, dropout_val, batch_norm)
 
-    conv12 = Conv2D(OUTPUT_MASK_CHANNELS, kernel_size=1, strides=1)(conv11)
-    conv12 = BatchNormalization(axis=-1)(conv12)
-    conv12 = Activation('sigmoid')(conv12)
+    up11 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv11), conv2])
+    conv12 = double_conv_layer(up11, 64, 3, dropout_val, batch_norm)
 
-    model = Model(inputs=[inputs], outputs=[conv12])
+    up12 = Concatenate(axis=-1)([UpSampling2D(size=(2, 2))(conv12), conv1])
+    conv13 = double_conv_layer(up12, 32, 3, 0, batch_norm)
+
+    conv14 = Conv2D(OUTPUT_MASK_CHANNELS, kernel_size=1, strides=1)(conv13)
+    conv14 = BatchNormalization(axis=-1)(conv14)
+    conv14 = Activation('sigmoid')(conv14)
+
+    model = Model(inputs=[inputs], outputs=[conv14])
     return model
