@@ -24,6 +24,7 @@ def parse_args():
     parser.add_argument('--batch_size', required=False, type=int, default=64)
     parser.add_argument('--num_epochs', required=False, type=int, default=100)
     parser.add_argument('--ckpt_epochs', required=False, type=int, default=10)
+    parser.add_argument('--weights_init', required=False, default=None)
 
     args = parser.parse_args()
     return args
@@ -38,8 +39,9 @@ if __name__ == '__main__':
                            batch_size=config.batch_size)
 
     # model = ZF_UNET_224()
-    # model.load_weights("zf_unet_224.h5")
     model = ZF_UNET_320_480()
+    if config.weights_init is not None:
+        model.load_weights(config.weights_init)
 
     path_weights = './weights'
     path_logs = './logs'
@@ -49,6 +51,7 @@ if __name__ == '__main__':
             print('Created folder {}'.format(p))
 
     optim = Adam()
+    # optim = Adam(decay=0.05)
     model.compile(optimizer=optim, loss=dice_coef_loss, metrics=[dice_coef])
 
     callbs = [
