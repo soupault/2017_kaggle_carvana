@@ -64,7 +64,8 @@ class DatasetTrain:
         """ """
         # img_r, img_c = 1280, 1918
         # img_r, img_c = 224, 224
-        img_r, img_c = 320, 480
+        img_r, img_c = 224, 336
+        # img_r, img_c = 320, 480
 
         logger.info('Caching files from {} | {}'
                     .format(self.path_imgs, self.path_masks))
@@ -102,7 +103,8 @@ class DatasetTrain:
             for idx, fname in enumerate(fnames_imgs[subset]):
                 img = self._read_img(os.path.join(self.path_imgs, fname))
                 mask = self._read_img(os.path.join(
-                    self.path_masks, fname.replace('.jpg', '_mask.png'))
+                    # self.path_masks, fname.replace('.gif', '_mask.png'))
+                    self.path_masks, fname.replace('.png', '_mask.png'))
                 ).reshape(img_r, img_c, 1)
 
                 X_temp[idx, :, :, :] = img
@@ -160,12 +162,23 @@ class DatasetTrain:
                 end_idx = min((batch_num + 1) * batch_size, data_size)
                 batch_idxs = sorted(list(shuffle_idxs[start_idx:end_idx]))
 
-                yield (np.asarray(compute(
-                           [delayed(X.__getitem__)(i)
-                            for i in batch_idxs], get=threaded.get)[0]),
-                       np.asarray(compute(
-                           [delayed(y.__getitem__)(i)
-                            for i in batch_idxs], get=threaded.get)[0]))
+                yield (
+                        np.asarray(
+                            compute([delayed(X.__getitem__)(i)
+                                     for i in batch_idxs], get=threaded.get)[0]
+                    ),
+                       np.asarray(
+                           compute([delayed(y.__getitem__)(i)
+                                    for i in batch_idxs], get=threaded.get)[0]
+                    )
+                )
+
+                # yield (np.asarray(compute(
+                #            [delayed(X.__getitem__)(i)
+                #             for i in batch_idxs], get=threaded.get)[0]),
+                #        np.asarray(compute(
+                #            [delayed(y.__getitem__)(i)
+                #             for i in batch_idxs], get=threaded.get)[0]))
 
                 # yield (epoch,
                 #        batch_num,
@@ -177,95 +190,11 @@ class DatasetTrain:
                 #                 for i in batch_idxs], get=threaded.get)[0])
 
 
-# class DatasetTest:
-#     def __init__(self, path_imgs, batch_size=64):
-#         """
-#         Parameters
-#         ----------
-#         file : str
-#         path_imgs : str
-#         path_masks : str
-#         batch_size : int
-#         """
-#         self.path_imgs = path_imgs
-#         self.batch_size = batch_size
-#         self.subset = 'test'
-
-#         self.fnames = self._find_files()
-#         self.num_examples = {'test': len(self.fnames)}
-#         logger.info('Found dataset `{}` of {} elements.'
-#                     .format(self.subset, self.num_examples[self.subset]))
-
-#     @staticmethod
-#     def _read_img(filename):
-#         """
-#         Parameters
-#         ----------
-#         filename : str
-#         """
-#         return imread(filename)
-#         # return np.clip(imread(filename), 0, 255).astype(np.uint8)
-
-#     def _find_files(self):
-#         """ """
-#         return glob.glob(os.path.join(self.path_imgs, '*'))
-
-#     def batch_iterator(self, number_of_examples=None, batch_size=None,
-#                        shuffle=False):
-#         """Generates a batch iterator for a dataset.
-
-#         Parameters
-#         ----------
-#         number_of_examples : int
-#             Number of files to return from the full dataset.
-#         batch_size : int
-#             Number of files in a batch.
-#         shuffle : bool
-
-#         Yields
-#         ------
-#         epoch : int
-#             Index of the current epoch.
-#         batch_num :
-#             Index of the batch within current epoch.
-#         X : (I, M, N, C)
-#             Batch of images.
-#         y : (I, M, N, C)
-#             Batch of masks.
-#         names :
-            
-#         """
-#         subset = self.subset
-
-#         if batch_size is None:
-#             batch_size = self.batch_size
-
-#         if number_of_examples is not None:
-#             data_size = min(number_of_examples, self.num_examples[subset])
-#         else:
-#             data_size = self.num_examples[subset]
-
-#         X = self.h5_file['X_{}'.format(subset)]
-#         names = self.h5_file['names_{}'.format(subset)]
-#         num_batches = int((data_size - 1) / batch_size) + 1
-
-#         # Shuffle the data at each epoch
-#         shuffle_idxs = np.arange(data_size)
-#         if shuffle:
-#             shuffle_idxs = np.random.permutation(shuffle_idxs)
-
-#         for batch_num in range(num_batches):
-#             start_idx = batch_num * batch_size
-#             end_idx = min((batch_num + 1) * batch_size, data_size)
-#             batch_idxs = sorted(list(shuffle_idxs[start_idx:end_idx]))
-
-#             yield (np.asarray(compute(
-#                        [delayed(X.__getitem__)(i)
-#                         for i in batch_idxs], get=threaded.get)[0]))
-#             # yield (batch_num,
-#             #        compute([delayed(X.__getitem__)(i)
-#             #                 for i in batch_idxs], get=threaded.get)[0],
-#             #        compute([delayed(y.__getitem__)(i)
-#             #                 for i in batch_idxs], get=threaded.get)[0],
-#             #        compute([delayed(names.__getitem__)(i)
-#             #                 for i in batch_idxs], get=threaded.get)[0])
+def random_horizontal_flip(image, kind, u=0.5):
+    if np.random.random() < u:
+        if kind == 'image':
+            return image[:, :, ::-1, :]
+        elif kind == 'mask':
+            return image[:, :, ::-1]
+        else:
+            raise ValueError('Unknown `kind`')

@@ -9,7 +9,8 @@ import scipy.ndimage as ndi
 import cv2
 
 # from h5py_shuffled_batch_gen import Dataset
-from models.zf_unet import ZF_UNET_224, ZF_UNET_320_480
+from models.unet_zf import ZF_UNET_224, ZF_UNET_320_480
+from models.unet_deform import UNET_DEFORM_224
 from utils import (_resize_encode_mask,
                    _mask_to_rle_string)
 
@@ -39,7 +40,8 @@ if __name__ == '__main__':
         os.makedirs(config.path_masks_low)
 
     # model = ZF_UNET_224()
-    model = ZF_UNET_320_480()
+    # model = ZF_UNET_320_480()
+    model = UNET_DEFORM_224()
     model.load_weights(config.weights)
 
     fnames = glob.glob(os.path.join(config.path_imgs, '*'))
@@ -106,17 +108,17 @@ if __name__ == '__main__':
 
             # *****************************************************************
             # Read images
-            print('...Batch read')
+            # print('...Batch read')
             ret = parallel(delayed(job_read_img)(e)
                            for e in batch_fnames_in)
             batch_images = np.asarray(ret)
 
             # Predict masks
-            print('...Batch predict')
+            # print('...Batch predict')
             batch_masks_low = np.squeeze(model.predict_on_batch(batch_images))
 
             # Save predicts
-            print('...Batch save predicts')
+            # print('...Batch save predicts')
             batch_fnames_out = [os.path.join(config.path_masks_low, e)
                                 for e in batch_bnames]
             parallel(delayed(job_write_mask)(f, m)

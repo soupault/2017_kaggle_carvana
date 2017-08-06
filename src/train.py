@@ -9,8 +9,10 @@ from keras.callbacks import (ProgbarLogger, ModelCheckpoint,
                              TensorBoard, ReduceLROnPlateau)
 
 from h5py_shuffled_batch_gen import DatasetTrain
-from models.zf_unet import (ZF_UNET_224, ZF_UNET_320_480,
-                            dice_coef_loss, dice_coef)
+from models.unet_zf import UNET_ZF_224, UNET_320_480
+from models.unet_deform import UNET_DEFORM_224, UNET_DEFORM_224_336
+from models.losses_metrics import (dice_coef_loss, dice_coef,
+                                   jacard_coef_loss, jacard_coef)
 
 
 def parse_args():
@@ -39,7 +41,9 @@ if __name__ == '__main__':
                            batch_size=config.batch_size)
 
     # model = ZF_UNET_224()
-    model = ZF_UNET_320_480()
+    # model = ZF_UNET_320_480()
+    # model = UNET_DEFORM_224()
+    model = UNET_DEFORM_224_336()
     if config.weights_init is not None:
         model.load_weights(config.weights_init)
 
@@ -50,9 +54,12 @@ if __name__ == '__main__':
             os.makedirs(p)
             print('Created folder {}'.format(p))
 
-    optim = Adam()
-    # optim = Adam(decay=0.05)
-    model.compile(optimizer=optim, loss=dice_coef_loss, metrics=[dice_coef])
+    # optim = Adam()
+    optim = Adam(decay=0.001)
+    model.compile(optimizer=optim,
+                  loss='binary_crossentropy',
+                  # loss=dice_coef_loss,
+                  metrics=[dice_coef, jacard_coef])
 
     callbs = [
         # ProgbarLogger(count_mode='steps'),
@@ -83,10 +90,3 @@ if __name__ == '__main__':
                           config.batch_size // 10)
         # validation_steps=30
     )
-
-    # for idx_step, data_batch in enumerate(datagen.batch_iterator()):
-    #     _, _, X_batch, y_batch, _ = data_batch
-    #     loss = model.train_on_batch(
-    #         np.asarray(X_batch[0]),
-    #         np.asarray(y_batch[0]))
-    #     print('Step: {}, loss: {}'.format(idx_step, loss))

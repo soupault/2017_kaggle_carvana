@@ -23,7 +23,6 @@ from keras.layers import (Input, Conv2D,
                           MaxPooling2D, UpSampling2D,
                           Concatenate)
 from keras.layers.normalization import BatchNormalization
-from keras import backend as K
 
 
 # Number of image channels (e.g. 3 in case of RGB, or 1 for grayscale)
@@ -36,30 +35,6 @@ def preprocess_batch(batch):
     batch /= 256
     batch -= 0.5
     return batch
-
-
-def dice_coef(y_true, y_pred):
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-    intersection = K.sum(y_true_f * y_pred_f)
-    return (2.0 * intersection + 1.0) /\
-        (K.sum(y_true_f) + K.sum(y_pred_f) + 1.0)
-
-
-def jacard_coef(y_true, y_pred):
-    y_true_f = K.flatten(y_true)
-    y_pred_f = K.flatten(y_pred)
-    intersection = K.sum(y_true_f * y_pred_f)
-    return (intersection + 1.0) /\
-        (K.sum(y_true_f) + K.sum(y_pred_f) - intersection + 1.0)
-
-
-def jacard_coef_loss(y_true, y_pred):
-    return -jacard_coef(y_true, y_pred)
-
-
-def dice_coef_loss(y_true, y_pred):
-    return -dice_coef(y_true, y_pred)
 
 
 def double_conv_layer(x, filters, kernel_size, dropout, batch_norm):
@@ -79,7 +54,7 @@ def double_conv_layer(x, filters, kernel_size, dropout, batch_norm):
     return conv
 
 
-def ZF_UNET_224(dropout_val=0.05, batch_norm=True):
+def UNET_ZF_224(dropout_val=0.05, batch_norm=True):
     inputs = Input((224, 224, INPUT_CHANNELS))  # TensorFlow backend, dim_order
     # inputs = Input((INPUT_CHANNELS, 224, 224))
     conv1 = double_conv_layer(inputs, 32, 3, dropout_val, batch_norm)
@@ -122,7 +97,7 @@ def ZF_UNET_224(dropout_val=0.05, batch_norm=True):
     return model
 
 
-def ZF_UNET_320_480(dropout_val=0.05, batch_norm=True):
+def UNET_320_480(dropout_val=0.05, batch_norm=True):
     inputs = Input((320, 480, INPUT_CHANNELS))  # TensorFlow backend, dim_order
 
     conv1 = double_conv_layer(inputs, 32, 3, dropout_val, batch_norm)
