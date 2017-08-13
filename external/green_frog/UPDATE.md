@@ -1,3 +1,0 @@
-- fix minor bugs
-- add data agumentation in training
-- add visualisation for predictions on train sample during training
